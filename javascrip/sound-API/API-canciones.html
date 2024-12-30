@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscardor de canciones</title>
+    <style>
+        html{
+            font-family: sans-serif;
+        }
+        main{
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .loader{
+            display: none;
+            margin: auto;
+        }
+        @media screen and (min-width: 800px){
+           main{
+            flex-direction:row;
+           }
+           main >*{
+            padding: 1rem;
+            flex-basis: 50%;
+           }         
+        }
+    </style>
+</head>
+<body>
+    <h1>Buscador de canciones</h1>
+    <form id="song-search">
+        <input type="text" name="artist" placeholder="nombre del artista" required>
+        <br>
+        <input type="text" name="song" placeholder="nombre de la cancion" required>
+        <br>
+        <input type="submit">
+    </form>
+    <img class="loader" src="../assets/hearts.svg" alt="Cargando...">
+    <aside class="error"></aside>
+    <main>
+        <article class="artist"></article>
+        <article class="song"></article>
+    </main>
+    <script>
+        const d=document,
+         $form= d.getElementById("song-search"),
+         $loader=d.querySelector(".loader"),
+         $error=d.querySelector(".error"),
+         $main=d.querySelector(".main"),
+         $artist=d.querySelector(".artist"),
+         $song=d.querySelector(".song")
+
+         $form.addEventListener("submit", async e=>{
+            e.preventDefault();
+            try {
+                $loader.style.display="block";
+                // obtener el valr del input artista
+                let artist= e.target.artist.value.toLowerCase(),
+                 song= e.target.song.value.toLowerCase(),
+                 $artistTemplate="",
+                 $songTemplate="",
+                 artistAPI = `http://localhost:3000/api/sound?artist=${encodeURIComponent(artist)}&song=${encodeURIComponent(song)}`
+                 artistFetch=  await fetch(artistAPI)
+                 artistData= await artistFetch.json();
+                 console.log(artistData);
+                 
+                 //validar si el artista existe, la API solo permite coldplay
+                 if (artistData.artistInfo) {
+                    let art=artistData.artistInfo;
+                    $artistTemplate=`
+                    <h2>${art.strArtist}</h2>
+                    <img src="${art.strArtistThumb}" alt="${art.strArtist}">
+                    <p>${art.intBornYear}-${(art.intDiedYear || "Presente")}</p>
+                    <p>${art.strCountry}</p>
+                    <p>${art.strGenre}-${art.strStyle}</p>
+                    <a href="http://${art.strWebside}" target="_blank">Sitio web</a>
+                    <p>${art.strBiographyEN}</p>
+                    `
+                 }
+                 if (!artistData.songLyrics) {
+                    $songTemplate=`<h2>letra no encontrada <mark>${song}</mark></h2>`
+                 }else{
+                    $songTemplate=`
+                    <h2>${song.toUpperCase()}</h2>
+                    <blockquote>${artistData.songLyrics}</blockquote>
+                    `
+                 }
+                $loader.style.display="none";
+                $artist.innerHTML=$artistTemplate;
+                $song.innerHTML=$songTemplate;
+
+            } catch (err) {
+                console.log(err)
+                let message=err.statusText || "ocurrio un error"
+                $error.innerHTML=`<p>Error ${err.status}: ${message}</p>`
+                $loader.style.display="none";
+            }
+         })
+    </script>
+</body>
+</html>

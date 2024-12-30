@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .loader{
+            display: none;
+            margin: 2rem auto;
+        }
+        img{
+            max-width:100%;
+            height:auto
+        }
+        .post-author img{
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1>WordPress REST API</h1>
+    <article id="site" class="site"></article>
+    <section id="posts" class="post"></section>
+    <img class="loader" src="../assets/hearts.svg" alt="Cargando">
+    <template id="post-template">
+        <article id="post">
+            <img class="post-image">
+            <aside>
+                <h2 class="post-title"></h2>
+                <figure class="post-author"></figure>
+                <small class="post-date"></small>
+                <a class="post-link" target="_blank"> ver publicacion original</a>
+                <p class="post-excerpt"></p>
+                <div class="post-categories"></div>
+                <div class="post-tags"></div>
+                <details class="post-content">
+                    <summary>ver contenido de la publicacion</summary>
+                    <article></article>
+                </details>
+            </aside>
+        </article>
+        <hr>
+    </template>
+    <script>
+        const d=document,
+         $site=d.getElementById("site"),
+         $post=d.getElementById("posts"),
+         $loader=d.querySelector(".loader"),
+         $template=d.getElementById("post-template").content,
+         $fragment=d.createDocumentFragment(),
+         DOMAIN="https://malvestida.com",
+         SITE=`${DOMAIN}/wp-json`,
+         API_WP=`${SITE}/wp/v2`,
+         POSTS=`${API_WP}/posts?_embed`,
+         PAGES=`${API_WP}/pages`,
+         CATEGORIAS=`${API_WP}/categories`;
+        let page=1,
+         perPage=5;
+        function getSiteData(){
+            fetch(SITE)
+            .then(res=>res.ok? res.json(): Promise.reject(res))
+            .then(json=>{
+                console.log(json);
+                $site.innerHTML=`
+                    
+                `
+            })
+            .catch(err=>{
+                console.log(err);
+                let message=err.statusText || "ocurrio un error"
+                $site.innerHTML=`<p>Error ${err.status}: ${message}</p>`
+            })
+        }
+        function getPosts(){
+            $loader.style.display="block";
+            fetch(`${POSTS}&page=${page}&per_page=${perPage}`)
+            .then(res=> res.ok? res.json():Promise.reject(res))
+            .then(json=>{
+                console.log(json)
+                json.forEach(e => {
+                    let categories ="",
+                     tags="";
+                     e._embedded["wp:term"][0].forEach(e=>categories+=`<li>${e.name}</li>`)
+                     e._embedded["wp:term"][1].forEach(e=>tags+=`<li>${e.name}</li>`)
+
+                    $template.querySelector(".post-image").src=e._embedded["wp:featuredmedia"][0].source_url;
+                    $template.querySelector(".post-image").alt=e.title.rendered;
+                    $template.querySelector(".post-author").innerHTML=`
+                    <img src="https://i.pinimg.com/736x/af/de/72/afde727d75f5aa585c407cd89910cb80.jpg" alt="incognito">                    
+                    <figcaption>incognito</figcaption>
+                    `
+                    $template.querySelector(".post-title").textContent=`${e.title.rendered}`;
+                    //clona el primer elemento entero con las etiquetas de todo el template por elemento
+                    $template.querySelector(".post-date").innerHTML=new Date(e.date).toLocaleDateString();
+                    $template.querySelector(".post-link").href=e.link;
+                    $template.querySelector(".post-excerpt").innerHTML=e.excerpt.rendered;
+                    $template.querySelector(".post-categories").innerHTML=`
+                    <p>Categorias</p>
+                    <ul>${categories}</ul>
+                    `;
+                    $template.querySelector(".post-tags").innerHTML=`
+                    <p>Categorias</p>
+                    <ul>${tags}</ul>
+                    `;
+                    $template.querySelector(".post-content > article").innerHTML=e.content.rendered
+                    let $clone= d.importNode($template,true);
+                    $fragment.appendChild($clone);
+                });
+                $post.appendChild($fragment)
+                $loader.style.display="none";
+            })
+            .catch(err=>{
+                console.log(err);
+                $post.innerHTML=`<p>Error ${err.status}:${err.statusText}</p>`
+                $loader.style.display="none";
+            })
+        }
+        d.addEventListener("DOMContentLoaded",e=>{
+            getSiteData();
+            getPosts();
+        })
+        window.addEventListener("scroll",e=>{
+            const {scrollTop, clientHeight, scrollHeight}=d.documentElement;
+            console.log(scrollTop, scrollHeight, clientHeight)
+            if (scrollTop + clientHeight >= scrollHeight - 5) {
+                console.log("cargar mas post")
+                page++
+                getPosts()
+            }
+
+            
+        })
+    </script>
+</body>
+</html>

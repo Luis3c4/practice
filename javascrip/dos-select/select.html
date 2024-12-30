@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>select departamento provincias</h1>
+    <label for="departamentos">departamento:</label>
+    <select name="" id="departamento">
+        <option value="">seleciona un departamento</option>
+    </select>
+
+    <label for="provincias">provincia:</label>
+    <select name="" id="provincia">
+        <option value="">seleciona una provincia</option>
+    </select>
+    <script>
+        const API_URL = 'https://bogota-laburbano.opendatasoft.com/api/explore/v2.1/catalog/datasets/distritos-peru/records',
+         d=document,  
+         selectDepartamentos=d.getElementById("departamento"),
+         selectProvincia=d.getElementById("provincia");
+        
+        async function cargarDepartamento() {
+            try {
+                //const response= await fetch(`${API_URL}?select=nombdep&group_by=nombdep&limit=25`);
+                const response= await fetch(`${API_URL}?select=nombdep&group_by=nombdep&limit=25`);
+                const data= await response.json();
+
+                const departamentos=data.results;
+                departamentos.forEach(depto => {
+                    
+                    const option = d.createElement("option");
+                    
+                    option.value=depto.nombdep;
+                    option.textContent=depto.nombdep;
+                    selectDepartamentos.appendChild(option);
+                });
+            } catch (err) {
+                const response = await fetch(`${API_URL}/api/explore/v2.1/catalog/datasets/distritos-peru/records?select=nombdep&where=nombdep%3D%22CAJAMARCA%22&group_by=nombdep&limit=20`),
+                 data= await response.json();
+                console.error('Error al cargar departamentos:', err);
+            }
+        }
+
+        async function cargarProvincia(departamento) {
+            try {
+                selectProvincia.innerHTML = '<option value="">Seleccione una provincia de la funcion</option>';
+                selectProvincia.disabled = true;
+                if (!departamento) return; 
+                const response= await fetch(`https://bogota-laburbano.opendatasoft.com/api/explore/v2.1/catalog/datasets/distritos-peru/records?select=nombprov&where=nombdep="${departamento}"&group_by=nombprov&limit=20`),
+                 data= await response.json()
+
+                 console.log(data.results)
+                 provincias= data.results;
+                provincias.forEach(prov=>{
+                    const option = d.createElement("option");
+                    option.value=prov.nombprov;
+                    option.textContent = prov.nombprov;
+                    selectProvincia.appendChild(option);
+                })
+                selectProvincia.disabled = false;
+            } catch (err) {
+                console.error('Error al cargar provincias:', err);
+            }
+        }
+        selectDepartamentos.addEventListener("change",e=>{
+            const departamentoSelect=e.target.value;
+            cargarProvincia(departamentoSelect);
+        })
+        cargarDepartamento()
+    </script>
+</body>
+</html>
