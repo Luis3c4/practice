@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD API REST AJAX</title>
+</head>
+<body>
+    <h1>CRUD API REST AJAX</h1>
+    <section>
+        <article>
+            <h2 class="crud-title">Agregar santo</h2>
+            <form class="crud-form">
+                <input type="text" name="nombre" placeholder="nombre" required>
+                <br>
+                <input type="text" name="constelacion" placeholder="constelacion" required>
+                <br>
+                <div name="id"></div>
+                <input type="submit" value="Enviar">
+                <input type="hidden" name ="id">
+            </form>
+        </article>
+        <article>
+            <h2>Ver Santos</h2>
+            <table class="crud-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Constelacion</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </article>
+    </section>
+    <template id="crud-template">
+        <tr>
+            <td class="name"></td>
+            <td class="constelation"></td>
+            <td>
+                <button class="edit">Editar</button>
+                <button class="delete">Eliminar</button>
+            </td>
+        </tr>
+    </template>
+    <script>
+        const d=document,
+            $table=d.querySelector(".crud-table"),
+            $form=d.querySelector(".crud-form"),
+            $title=d.querySelector(".crud-title"),
+            $tbody=d.querySelector("tbody"),
+            $template=d.getElementById("crud-template"),
+            $fragment=d.createDocumentFragment();
+
+        const ajax=(options)=>{
+            let {url, method, success, error, data}=options;
+            const xhr=new XMLHttpRequest();
+            xhr.addEventListener("readystatechange",e=>{
+                if(xhr.readyState!==4)return;
+                if (xhr.status >= 200 && xhr.status<300) {
+                    let html= xhr.responseText
+                    console.log(html)
+                    let json= JSON.parse(xhr.responseText);
+                    //ejecuta la funcion success del objeto pasando el parametro json
+                    success(json);
+                    
+                }else{
+                    let message= xhr.statusText||"Ocurio un error"
+                    error(`Error ${xhr.status}:${message}`)
+                }
+
+            })   
+            xhr.open(method || "GET",url);
+            xhr.setRequestHeader("Contend-type","application/json; charset=utf-8")
+            //CONVERTIR DATO JSON EN TEXTO
+            xhr.send(JSON.stringify(data))
+        }    
+        const getAll=()=>{
+            ajax({
+                method:"GET",
+                url:"http://localhost:3000/santos",
+                success:(res)=>{
+                    res.forEach(re => {
+                        //copia todo <tr> de la etiqueta template no la etiqueta template
+                        //dentro del foreach para poder crear el <tr> las veces necesarias
+                        const $clone= $template.content.cloneNode(true);
+
+                        // copia solo el <td> de <tr> para poder insertar los datos
+                        const $td=$clone.querySelectorAll("td");
+                        const $btne=$clone.querySelector(".edit");
+                        const $btnd=$clone.querySelector(".delete");
+                        $btne.dataset.id=re.id;   
+                        $btne.dataset.nombre=re.nombre; 
+                        $btne.dataset.constelacion=re.constelacion;      
+                        $td[0].textContent=`${re.nombre}`
+                        $td[1].textContent=`${re.constelacion}`
+                        //lo enviamos al tbody de table 
+                        $fragment.appendChild($clone);   
+                    });
+                    $tbody.appendChild($fragment)
+                    console.log(res)  
+                    },
+                error:(err)=>{console.error(err)},
+                date:null
+            })
+        }
+        d.addEventListener("DOMContentLoaded",getAll)
+        d.addEventListener("submit",e=>{
+            //este target solo funciona en formularios para acceder a su valor value=""
+            if(e.target===$form){
+             e.preventDefault()
+             //accede a name="id" en este caso no tiene value="" arroja false lo convierte a true
+             if (!e.target.id.value) {
+                //POST
+                ajax({
+                    url:"http://localhost:3000/santos",
+                    method:"POST",
+                    success: (res)=>location.reload(),
+                    error:()=> $form.insertAdjacentHTML("afterend",`<p><b>${err}</p></b>`),
+                    data:{
+                        nombre:e.target.nombre.value,
+                        constelacion:e.target.constelacion.value
+                    }
+                })
+             }else{
+                //PUT
+                ajax({
+                    url:`http://localhost:3000/santos/${e.target.id.value}`,
+                    method:"PUT",
+                    success: (res)=>location.reload(),
+                    error:()=> $form.insertAdjacentHTML("afterend",`<p><b>${err}</p></b>`),
+                    data:{
+                        nombre:e.target.nombre.value,
+                        constelacion:e.target.constelacion.value
+                    }
+                })
+             }
+            }
+            
+        })
+        d.addEventListener("click",e=>{
+            if (e.target.matches(".edit")) {
+                $title.textContent="Editar Santo";
+                $form.nombre.value=e.target.dataset.nombre;
+                $form.constelacion.value=e.target.dataset.constelacion;
+                $form.id.value=e.target.dataset.id;
+            }
+            if (e.target.matches(".delete")) {
+                let isDelete=confirm(`estas seguro de eliminar ${e.target.dataset.nombre} con id ${e.target.dataset.id}`)
+                if(isDelete){
+                    ajax({
+                    url:`http://localhost:3000/santos/${e.target.id.value}`,
+                    method:"PUT",
+                    success: (res)=>location.reload(),
+                    error:()=> $form.insertAdjacentHTML("afterend",`<p><b>${err}</p></b>`),
+                    data:{
+                        nombre:e.target.nombre.value,
+                        constelacion:e.target.constelacion.value
+                    }
+                })
+                }
+            }
+        })
+    </script>
+</body>
+</html>

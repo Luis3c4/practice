@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manipulacion del DOM</title>
+</head>
+<body>
+    <form id="todo-form">
+        <input type="text" id="todo-input" placeholder="Escribe una tarea">
+        <input type="submit" value="Agregar">
+    </form>
+    <h2>Lista de tareas</h2>
+    <ul id="todo-list"></ul>
+    <script>
+        const $form = document.getElementById('todo-form');
+        const $input = document.getElementById('todo-input');
+        const $list = document.getElementById('todo-list');
+        document.addEventListener("submit",e=>{
+            if(e.target.matches("#todo-form")){
+                console.log(e.target);
+                e.preventDefault();
+                let $li=document.createElement("li");
+                $li.textContent=e.target[0].value;
+                $list.appendChild($li);   
+                e.target[0].value="";
+                $input.focus();
+            }
+
+        })
+    </script> 
+</body>
+</html>

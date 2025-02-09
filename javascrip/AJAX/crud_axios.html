@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD API REST AJAX</title>
+</head>
+<body>
+    <h1>CRUD API REST Axios</h1>
+    <section>
+        <article>
+            <h2 class="crud-title">Agregar santo</h2>
+            <form class="crud-form">
+                <input type="text" name="nombre" placeholder="nombre" required>
+                <br>
+                <input type="text" name="constelacion" placeholder="constelacion" required>
+                <br>
+                <div name="id"></div>
+                <input type="submit" value="Enviar">
+                <input type="hidden" name ="id">
+            </form>
+        </article>
+        <article>
+            <h2>Ver Santos</h2>
+            <table class="crud-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Constelacion</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </article>
+    </section>
+    <template id="crud-template">
+        <tr>
+            <td class="name"></td>
+            <td class="constelation"></td>
+            <td>
+                <button class="edit">Editar</button>
+                <button class="delete">Eliminar</button>
+            </td>
+        </tr>
+    </template>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const d=document,
+            $table=d.querySelector(".crud-table"),
+            $form=d.querySelector(".crud-form"),
+            $title=d.querySelector(".crud-title"),
+            $tbody=d.querySelector("tbody"),
+            $template=d.getElementById("crud-template"),
+            $fragment=d.createDocumentFragment();
+
+      
+        const getAll=async()=>{
+            try {
+                let res = await axios.get("http://localhost:3000/santos")
+                console.log(res)
+                let json = await res.data;
+                console.log(json)
+                json.forEach(re => {
+                    $template.content.querySelector(".name").textContent=re.nombre;
+                    $template.content.querySelector(".constelation").textContent=re.constelacion;
+                    $template.content.querySelector(".edit").dataset.id=re.id;
+                    $template.content.querySelector(".edit").dataset.nombre=re.nombre;
+                    $template.content.querySelector(".edit").dataset.constelacion=re.constelacion;
+                    $template.content.querySelector(".delete").dataset.id=re.id;
+
+                    let $clone =d.importNode($template.content,true)
+                    $fragment.appendChild($clone)
+                });
+                $tbody.appendChild($fragment)
+            } catch (err) {
+                let message=err.statusText ||"ocurrio un error";
+                $table.insertAdjacentHTML("afterend",`<p><b>Error ${err.status}: ${message}</b></p>`)
+            }
+        }
+        d.addEventListener("DOMContentLoaded",getAll)
+        d.addEventListener("submit", async e=>{
+            if (e.target===$form) {
+                e.preventDefault();
+                if (!e.target.id.value) {
+                    try {
+                        let options={
+                            method:"POST",
+                            headers:{
+                                "Contend-type":"application/json; charset=utf-8"
+                            },
+                            data:JSON.stringify({
+                                nombre:e.target.nombre.value,
+                                constelacion:e.target.constelacion.value
+                            })
+                        }
+                        let res=await axios("http://localhost:3000/santos",options),
+                        json= await res.data;
+                        location.reload
+                    } catch (err) {
+                        let message=error.statusText || "ocurrio un error";
+                        $form.insertAdjacentHTML("afterend",`<p><b>${err}</p></b>`)
+                    }
+                }else {
+                    try {
+                        let options={
+                            method:"PUT",
+                            headers:{
+                                "Contend-type":"application/json; charset=utf-8"
+                            },
+                            data:JSON.stringify({
+                                nombre:e.target.nombre.value,
+                                constelacion:e.target.constelacion.value
+                            })
+                        }
+                        let res=await axios(`http://localhost:3000/santos${e.target.id.value}`,options),
+                        json= await res.data;
+                        location.reload
+                    } catch (err) {
+                        let message=error.statusText || "ocurrio un error";
+                        $form.insertAdjacentHTML("afterend",`<p><b>${err}</p></b>`)
+                    }
+                }
+            }
+        })
+        d.addEventListener("click", async e=>{
+            if(e.target.matches(".edit")){
+                $title.textContent="Editar santo"
+                $form.nombre.value=e.target.dataset.nombre;
+                $form.constelacion.value=e.target.dataset.constelacion;
+                //boton enviar hiden
+                $form.id.value=e.target.dataset.id;
+            }
+            if (e.target.matches(".delete")) {
+                let isDelete=confirm(`estas seguro de eliminar ${e.target.dataset.id}`)
+                if(isDelete){
+                    try {
+                        
+                        let options ={
+                            method:"DELETE",
+                            headers:{
+                                "Content-type":"application/json; charset=utf-8"
+                            }
+                        }
+                        let res=await axios(`http://localhost:3000/santos/${e.target.dataset.id}`,options),
+                         json= await res.data;
+                         if(!res.ok) throw {status: res.status, statusText:res.statusText};
+                         location.reload();
+                    } catch (error) {
+                        let message=error.statusText || "ocurrio un error";
+                        $form.insertAdjacentHTML("afterend",`<p><b>${error}</p></b>`)
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+</html>
